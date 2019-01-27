@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- 启动Springmvc注解驱动 -->
+    <mvc:annotation-driven>
+        <!-- 开启异步 servlet 支持，并设置超时时间为 5 秒 -->
+        <mvc:async-support default-timeout="5000"/>
+        <!--
+        取消 /xxx.* 规则
+            避免出现 request uri 地址与静态资源文件名相同造成无法访问问题，如下
+                @RequestMappint("/login")
+                /login.jsp
+                此时若访问 /login.jsp 会匹配到 /login 与 /login.* 两个规则，那么此时 login.jsp 将无法访问
+         -->
+        <mvc:path-matching suffix-pattern="false"/>
+    </mvc:annotation-driven>
+
+    <!-- 自动将控制器加载到bean -->
+    <context:component-scan base-package="cn.wolfcode.jetty.web"/>
+    <!-- 默认静态资源处理器 -->
+    <mvc:default-servlet-handler/>
+
+    <!-- 配置视图解析器 -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/views/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!-- 工作线程池 -->
+    <bean id="workerPool" class="java.util.concurrent.ThreadPoolExecutor">
+        <constructor-arg name="corePoolSize" value="16"/>
+        <constructor-arg name="maximumPoolSize" value="200"/>
+        <constructor-arg name="keepAliveTime" value="10"/>
+        <constructor-arg name="unit" value="MILLISECONDS"/>
+        <constructor-arg name="workQueue">
+            <bean class="java.util.concurrent.LinkedBlockingQueue"/>
+        </constructor-arg>
+    </bean>
+
+    <!-- 配置拦截器 -->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/static/**"/>
+            <mvc:exclude-mapping path="/login"/>
+            <bean class="cn.wolfcode.jetty.web.interceptor.LoginInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+</beans>
